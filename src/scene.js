@@ -1180,6 +1180,67 @@ Scene.loadStyles = function (url)
 // Normalize some style settings that may not have been explicitly specified in the stylesheet
 Scene.postProcessStyles = function (styles)
 {
+    // Load remote modes
+    // for (var m in styles.modes) {
+    //     if (styles.modes[m].url != null) {
+    //         var req = new XMLHttpRequest();
+    //         req.onload = function () {
+    //             var mode = {};
+
+    //             // Try JSON first, then YAML
+    //             try {
+    //                 eval('mode = ' + req.response);
+    //             }
+    //             catch (e) {
+    //                 try {
+    //                     mode = yaml.safeLoad(req.response);
+    //                 }
+    //                 catch (e) {
+    //                     console.log("failed to parse mode: " + req.response);
+    //                 }
+    //             }
+
+    //             styles.modes[m] = mode;
+    //         };
+    //         req.open('GET', styles.modes[m].url + '?' + (+new Date()), false /* async flag */);
+    //         req.send();
+    //     }
+    // }
+
+    // Import modes from one or more URLs (containing one or more modes each)
+    if (styles.modes.import) {
+        for (var i=0; i < styles.modes.import.length; i++) {
+            var url = styles.modes.import[i];
+            var req = new XMLHttpRequest();
+            req.onload = function () {
+                var modes = {};
+
+                // Try JSON first, then YAML
+                try {
+                    eval('modes = ' + req.response);
+                }
+                catch (e) {
+                    try {
+                        modes = yaml.safeLoad(req.response);
+                    }
+                    catch (e) {
+                        console.log("failed to parse mode: " + req.response);
+                    }
+                }
+
+                // Add modes
+                for (var m in modes) {
+                    styles.modes[m] = modes[m];
+                }
+            };
+            req.open('GET', url + '?' + (+new Date()), false /* async flag */);
+            req.send();
+        }
+
+        // Imports are processed once, at load time
+        delete styles.modes.import;
+    }
+
     // Post-process styles
     for (var m in styles.layers) {
         if (styles.layers[m].visible !== false) {
