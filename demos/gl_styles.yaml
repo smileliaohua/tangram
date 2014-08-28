@@ -187,6 +187,24 @@ modes:
             - windows
             - colorbleed
 
+    dotwood:
+        extends: polygons
+        shaders:
+            - dots
+            - transforms:
+                fragment:
+                    vec3 dot_color = color;
+            - wood
+            - transforms:
+                fragment: |
+                    color *= dot_color;
+
+    halfdot:
+        extends: polygons
+        shaders:
+            - dots
+            - halftone
+
 layers:
     water_ocean:
         mode:

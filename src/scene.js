@@ -1249,38 +1249,44 @@ Scene.postProcessStyles = function (styles)
             var dest = {};
 
             for (var s=0; s < shader_list.length; s++) {
-                if (styles.modes[shader_list[s]]) {
-                    var source = styles.modes[shader_list[s]].shaders;
+                // The source can reference an existing mode directly by name, OR, it can be the
+                // shader portion (transforms, defines, etc.) of a new, ad hoc mode embedded directly as an object
+                var source = (styles.modes[shader_list[s]] && styles.modes[shader_list[s]].shaders) || shader_list[s];
 
-                    if (source.defines) {
-                        dest.defines = dest.defines || {};
-                        for (var u in source.defines) {
-                            dest.defines[u] = source.defines[u];
-                        }
+                if (source.defines) {
+                    dest.defines = dest.defines || {};
+                    for (var u in source.defines) {
+                        dest.defines[u] = source.defines[u];
                     }
+                }
 
-                    if (source.uniforms) {
-                        dest.uniforms = dest.uniforms || {};
-                        for (var u in source.uniforms) {
-                            dest.uniforms[u] = source.uniforms[u];
-                        }
+                if (source.uniforms) {
+                    dest.uniforms = dest.uniforms || {};
+                    for (var u in source.uniforms) {
+                        dest.uniforms[u] = source.uniforms[u];
                     }
+                }
 
-                    if (source.transforms) {
-                        dest.transforms = dest.transforms || {};
+                if (source.transforms) {
+                    dest.transforms = dest.transforms || {};
 
-                        // Each transform can itself be a single string, or an array of transforms
-                        for (var t in source.transforms) {
-                            dest.transforms[t] = dest.transforms[t] || [];
+                    // Each transform property can itself be:
+                    // - a single string snippet of GLSL
+                    // - an object referencing an external GLSL snippet by URL, in the form { url: '...' }
+                    // - an array that can freely mix either of the above formats, e.g. [string, string, {url}]
+                    //
+                    // Note: the URL referenced snippets are retrieved/expanded later at the shader injection step,
+                    // here we are just passing objects around
+                    for (var t in source.transforms) {
+                        dest.transforms[t] = dest.transforms[t] || [];
 
-                            // Single string transform
-                            if (typeof source.transforms[t] == 'string') {
-                                dest.transforms[t].push(source.transforms[t]);
-                            }
-                            // Array of transforms
-                            else if (typeof source.transforms[t] == 'object' && source.transforms[t].length > 0) {
-                                dest.transforms[t].push.apply(dest.transforms[t], source.transforms[t]);
-                            }
+                        // Array of transforms
+                        if (typeof source.transforms[t] == 'object' && source.transforms[t].length > 0) {
+                            dest.transforms[t].push.apply(dest.transforms[t], source.transforms[t]);
+                        }
+                        // Single inline string or URL transform
+                        else {
+                            dest.transforms[t].push(source.transforms[t]);
                         }
                     }
                 }
