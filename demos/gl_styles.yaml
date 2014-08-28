@@ -142,6 +142,21 @@ modes:
             transforms:
                 # fragment: color = mix(color_prelight, color_prelight * lighting, sin(u_time) / 2. + .5); // fade lighting in and out
 
+    points:
+        shaders:
+            transforms:
+                # fragment: color += vec3(gl_FragCoord.x / u_resolution.x, 0.0, gl_FragCoord.y / u_resolution.y);
+                fragment: { url: demos/shaders/color_bleed.glsl }
+
+    # polygons:
+    #     shaders:
+    #         defines:
+    #             LIGHTING_ENVIRONMENT: true
+
+
+
+    # Imported modes
+
     # halftone:
     #     url: demos/styles/halftone.yaml
 
@@ -154,18 +169,23 @@ modes:
     import:
         - demos/styles/halftone.yaml
         - demos/styles/colorhalftone.yaml
-        # - demos/styles/windows.yaml
+        - demos/styles/windows.yaml
 
-    points:
+    # Compound modes
+
+    halfpopup:
+        extends: polygons
         shaders:
-            transforms:
-                # fragment: color += vec3(gl_FragCoord.x / u_resolution.x, 0.0, gl_FragCoord.y / u_resolution.y);
-                fragment: { url: demos/shaders/color_bleed.glsl }
+            - popup
+            - halftone
 
-    # polygons:
-    #     shaders:
-    #         defines:
-    #             LIGHTING_ENVIRONMENT: true
+    mixed:
+        extends: polygons
+        shaders:
+            - elevator
+            - popup
+            - windows
+            - colorbleed
 
 layers:
     water_ocean:
@@ -258,6 +278,7 @@ layers:
             # name: colorhalftone
             # name: palette
             # name: envmap
+            name: mixed
         # filter: function (f) { return f.properties.name != null; }
         # filter: function (f) { return Math.random() < 0.25; }
         # filter: function (f) { return true; }

@@ -1241,6 +1241,56 @@ Scene.postProcessStyles = function (styles)
         delete styles.modes.import;
     }
 
+    // Merge compound modes
+    for (var m in styles.modes) {
+        // Array of mode references, merge shaders
+        var shader_list = styles.modes[m].shaders;
+        if (shader_list.length > 0) {
+            var dest = {};
+
+            for (var s=0; s < shader_list.length; s++) {
+                if (styles.modes[shader_list[s]]) {
+                    var source = styles.modes[shader_list[s]].shaders;
+
+                    if (source.defines) {
+                        dest.defines = dest.defines || {};
+                        for (var u in source.defines) {
+                            dest.defines[u] = source.defines[u];
+                        }
+                    }
+
+                    if (source.uniforms) {
+                        dest.uniforms = dest.uniforms || {};
+                        for (var u in source.uniforms) {
+                            dest.uniforms[u] = source.uniforms[u];
+                        }
+                    }
+
+                    if (source.transforms) {
+                        dest.transforms = dest.transforms || {};
+
+                        // Each transform can itself be a single string, or an array of transforms
+                        for (var t in source.transforms) {
+                            dest.transforms[t] = dest.transforms[t] || [];
+
+                            // Single string transform
+                            if (typeof source.transforms[t] == 'string') {
+                                dest.transforms[t].push(source.transforms[t]);
+                            }
+                            // Array of transforms
+                            else if (typeof source.transforms[t] == 'object' && source.transforms[t].length > 0) {
+                                dest.transforms[t].push.apply(dest.transforms[t], source.transforms[t]);
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Replace list of mode references with merged mode
+            styles.modes[m].shaders = dest;
+        }
+    }
+
     // Post-process styles
     for (var m in styles.layers) {
         if (styles.layers[m].visible !== false) {
