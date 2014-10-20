@@ -16,7 +16,11 @@
         'mapzen': {
             source: {
                 type: 'GeoJSONTileSource',
-                url:  appendProtocol('//vector.mapzen.com/osm/all/{z}/{x}/{y}.json')
+                url:  appendProtocol('//vector.mapzen.com/osm/all/{z}/{x}/{y}.json'),
+                bounds: {
+                    sw: { lng: -74.01776790618898, lat: 40.70955616362436 },
+                    ne: { lng: -74.0016531944275, lat: 40.71536268109624 }
+                }
             },
             layers: 'demos/layers.yaml',
             styles: 'demos/styles.yaml'
@@ -174,6 +178,7 @@
         inertia: false,
         keyboard: false
     });
+    window.map = map;
 
     var layer = Tangram.leafletLayer({
         vectorTileSource: tile_sources[default_tile_source].source,
@@ -185,6 +190,7 @@
         unloadInvisibleTiles: false,
         updateWhenIdle: false
     });
+    window.layer = layer;
 
     var scene = layer.scene;
     window.scene = scene;

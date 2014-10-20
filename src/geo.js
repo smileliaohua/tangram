@@ -94,6 +94,32 @@ Geo.transformGeometry = function (geometry, transform)
     return {};
 };
 
+// Iterator for coordinates in a GeoJSON geometry
+Geo.coordinates = function* (geometry) {
+    var shapes;
+
+    if (geometry.type === 'Point') {
+        shapes = [[[geometry.coordinates]]];
+    }
+    else if (geometry.type === 'LineString' || geometry.type === 'MultiPoint') {
+        shapes = [[geometry.coordinates]];
+    }
+    else if (geometry.type === 'Polygon' || geometry.type === 'MultiLineString') {
+        shapes = [geometry.coordinates];
+    }
+    else if (geometry.type === 'MultiPolygon') {
+        shapes = geometry.coordinates;
+    }
+
+    for (var rings of shapes) {
+        for (var ring of rings) {
+            for (var coord of ring) {
+                yield coord;
+            }
+        }
+    }
+};
+
 Geo.boxIntersect = function (b1, b2)
 {
     return !(
@@ -101,6 +127,16 @@ Geo.boxIntersect = function (b1, b2)
         b2.ne.x < b1.sw.x ||
         b2.sw.y > b1.ne.y ||
         b2.ne.y < b1.sw.y
+    );
+};
+
+Geo.boxWithin = function (b1, b2)
+{
+    return !(
+        b1.sw.x < b2.sw.x ||
+        b1.sw.y < b2.sw.y ||
+        b1.ne.x > b2.ne.x ||
+        b1.ne.y > b2.ne.y
     );
 };
 

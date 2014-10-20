@@ -255,7 +255,7 @@ Scene.prototype.workerPostMessageForTile = function (tile, message) {
 };
 
 Scene.prototype.setCenter = function (lng, lat) {
-    this.center = { lng: lng, lat: lat };
+    this.center = { lng, lat };
     this.dirty = true;
 };
 
@@ -843,6 +843,7 @@ Scene.prototype.buildTile = function(key) {
             coords: tile.coords, // used by style helpers
             min: tile.min, // used by TileSource to scale tile to local extents
             max: tile.max, // used by TileSource to scale tile to local extents
+            bounds: tile.bounds, // used by TileSource to check if tile is in source bounds
             debug: tile.debug
         },
         tile_source: this.tile_source,

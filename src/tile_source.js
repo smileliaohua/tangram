@@ -10,6 +10,14 @@ export default class TileSource {
     constructor (source) {
         this.url_template = source.url;
         this.max_zoom = source.max_zoom || Geo.max_zoom; // overzoom will apply for zooms higher than this
+        if (source.bounds != null) {
+            this.bounds = {
+                sw: Geo.latLngToMeters(Point(source.bounds.sw.lng, source.bounds.sw.lat)),
+                ne: Geo.latLngToMeters(Point(source.bounds.ne.lng, source.bounds.ne.lat))
+                // sw: Point(source.bounds.sw.lng, source.bounds.sw.lat),
+                // ne: Point(source.bounds.ne.lng, source.bounds.ne.lat)
+            };
+        }
     }
 
     // Create a tile source by type, factory-style
@@ -67,7 +75,95 @@ export default class TileSource {
         return tile;
     }
 
-    loadTile(tile, callback) { throw new MethodNotImplemented('loadTile'); }
+    static cropTile (tile, bounds) {
+        for (var t in tile.layers) {
+            if (!tile.layers[t].features) {
+                continue;
+            }
+
+            // Translate crop bounds relative to tile bounds
+            var lbounds = {
+                sw: {
+                    x: (bounds.sw.x - tile.min.x) * Geo.units_per_meter[tile.coords.z],
+                    y: (bounds.sw.y - tile.min.y) * Geo.units_per_meter[tile.coords.z]
+                },
+                ne: {
+                    x: (bounds.ne.x - tile.min.x) * Geo.units_per_meter[tile.coords.z],
+                    y: (bounds.ne.y - tile.min.y) * Geo.units_per_meter[tile.coords.z]
+                }
+            };
+
+            tile.layers[t].features = tile.layers[t].features.filter(feature => {
+                // Cull any features that have at least one point outside the clipping bounds
+                // var culled = false;
+                // for (var coord of Geo.coordinates(feature.geometry)) {
+                //     if (coord[0] < lbounds.sw.x ||
+                //         coord[1] < lbounds.sw.y ||
+                //         coord[0] > lbounds.ne.x ||
+                //         coord[1] > lbounds.ne.y) {
+                //         culled = true;
+                //     }
+                // }
+
+                // Cull any features that are entirely outside the clipping bounds
+                var culled = true;
+                for (var coord of Geo.coordinates(feature.geometry)) {
+                    if (coord[0] > lbounds.sw.x &&
+                        coord[1] > lbounds.sw.y &&
+                        coord[0] < lbounds.ne.x &&
+                        coord[1] < lbounds.ne.y) {
+                        culled = false;
+                    }
+                }
+
+                return !culled;
+            });
+        }
+        return tile;
+    }
+
+    tileWithinBounds (tile) {
+        if (this.bounds == null) {
+            return true;
+        }
+        return Geo.boxWithin(tile.bounds, this.bounds);
+    }
+
+    tileIntersectsBounds (tile) {
+        if (this.bounds == null) {
+            return true;
+        }
+        return Geo.boxIntersect(tile.bounds, this.bounds);
+    }
+
+    loadTile(tile, callback) {
+        if (!this.tileIntersectsBounds(tile)) {
+            // console.log(`tile ${tile.key} is OUTSIDE bounds, skipping`);
+            // console.log(`tile.bounds: ${JSON.stringify(tile.bounds)}, this.bounds: ${JSON.stringify(this.bounds)}`);
+            // TODO: do we need to indicate to the callback why no tile object was returned?
+            callback(null, null);
+            return false;
+        }
+        // console.log(`tile ${tile.key} INSIDE bounds, loading`);
+
+        this._loadTileData(tile, (err, tile) => {
+            if (err) {
+                callback(err);
+            }
+
+            if (this.bounds && !this.tileWithinBounds(tile)) {
+                // console.log(`tile ${tile.key} PARTIALLY OVERLAPS bounds, cropping`);
+                TileSource.cropTile(tile, this.bounds);
+            }
+            callback(null, tile);
+        });
+        return true;
+    }
+
+    _loadTileData (tile, callback) {
+        throw new MethodNotImplemented('_loadTileData');
+    }
+
 }
 
 
@@ -89,8 +185,8 @@ export class NetworkTileSource extends TileSource {
         }
     }
 
-    loadTile (tile, callback) {
-
+    _loadTileData (tile, callback) {
+        var req = new XMLHttpRequest();
         var url = this.url_template.replace('{x}', tile.coords.x).replace('{y}', tile.coords.y).replace('{z}', tile.coords.z);
 
         if (this.url_hosts != null) {
