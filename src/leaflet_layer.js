@@ -77,9 +77,14 @@ export var LeafletLayer = L.GridLayer.extend({
         this.updateBounds();
 
         // Use leaflet's existing event system as the callback mechanism
-        this.scene.init(() => {
+        // this.scene.init(() => {
+        //     this.fire('init');
+        // });
+        (async () => {
+            await this.scene.init();
             this.fire('init');
-        });
+            return;
+        })();
     },
 
     onRemove: function () {

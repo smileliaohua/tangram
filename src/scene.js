@@ -60,57 +60,52 @@ Scene.create = function ({tile_source, layers, styles}, options = {}) {
     return new Scene(tile_source, layers, styles, options);
 };
 
-Scene.prototype.init = function (callback) {
+// Scene.prototype.init = function (callback) {
+Scene.prototype.init = async function () {
     if (this.initialized) {
         return false;
     }
 
-    // Load scene definition (layers, styles, etc.), then create modes & workers
-    this.loadScene(() => {
-        var queue = Queue();
-
+    // Load scene definition (layers, styles, etc.), then create modes & workers in parallel
+    await this.loadScene();
+    await Promise.all([
         // Create rendering modes
-        queue.defer(complete => {
+        new Promise((resolve) => {
+            console.log("creating modes");
             this.modes = Scene.createModes(this.styles.modes);
             this.updateActiveModes();
-            complete();
-        });
+            resolve();
+        }),
 
         // Create web workers
-        queue.defer(complete => {
-            this.createWorkers(complete);
-        });
+        new Promise((resolve) => {
+            console.log("creating workers");
+            this.createWorkers(resolve);
+        })
+    ]);
 
-        // Then create GL context
-        queue.await(() => {
-            // Create canvas & GL
-            this.container = this.container || document.body;
-            this.canvas = document.createElement('canvas');
-            this.canvas.style.position = 'absolute';
-            this.canvas.style.top = 0;
-            this.canvas.style.left = 0;
-            this.canvas.style.zIndex = -1;
-            this.container.appendChild(this.canvas);
+    // Create canvas & GL
+    this.container = this.container || document.body;
+    this.canvas = document.createElement('canvas');
+    this.canvas.style.position = 'absolute';
+    this.canvas.style.top = 0;
+    this.canvas.style.left = 0;
+    this.canvas.style.zIndex = -1;
+    this.container.appendChild(this.canvas);
 
-            this.gl = GL.getContext(this.canvas);
-            this.resizeMap(this.container.clientWidth, this.container.clientHeight);
+    this.gl = GL.getContext(this.canvas);
+    this.resizeMap(this.container.clientWidth, this.container.clientHeight);
 
-            this.createCamera();
-            this.createLighting();
-            this.initModes(); // TODO: remove gl context state from modes, and move init to create step above?
-            this.initSelectionBuffer();
+    this.createCamera();
+    this.createLighting();
+    this.initModes(); // TODO: remove gl context state from modes, and move init to create step above?
+    this.initSelectionBuffer();
 
-            // this.zoom_step = 0.02; // for fractional zoom user adjustment
-            this.last_render_count = null;
-            this.initInputHandlers();
+    // this.zoom_step = 0.02; // for fractional zoom user adjustment
+    this.last_render_count = null;
+    this.initInputHandlers();
 
-            this.initialized = true;
-
-            if (typeof callback === 'function') {
-                callback();
-            }
-        });
-    });
+    this.initialized = true;
 };
 
 Scene.prototype.destroy = function () {
@@ -1143,8 +1138,8 @@ Scene.prototype.mergeTile = function (key, source_tile) {
 };
 
 // Load (or reload) the scene config
-Scene.prototype.loadScene = function (callback) {
-    var queue = Queue();
+Scene.prototype.loadScene = async function () {
+    var tasks = [];
 
     // If this is the first time we're loading the scene, copy any URLs
     if (!this.layer_source && typeof(this.layers) === 'string') {
@@ -1157,56 +1152,51 @@ Scene.prototype.loadScene = function (callback) {
 
     // Layer by URL
     if (this.layer_source) {
-        queue.defer(complete => {
+        tasks.push(new Promise(resolve => {
             Scene.loadLayers(
                 this.layer_source,
                 layers => {
                     this.layers = layers;
                     this.layers_serialized = Utils.serializeWithFunctions(this.layers);
-                    complete();
+                    resolve();
                 }
             );
-        });
+        }));
     }
 
     // Style by URL
     if (this.style_source) {
-        queue.defer(complete => {
+        tasks.push(new Promise(resolve => {
             Scene.loadStyles(
                 this.style_source,
                 styles => {
                     this.styles = styles;
                     this.styles_serialized = Utils.serializeWithFunctions(this.styles);
-                    complete();
+                    resolve();
                 }
             );
-        });
+        }));
     }
     // Style object
     else {
         this.styles = Scene.postProcessStyles(this.styles);
     }
 
-    // Everything is loaded
-    queue.await(function() {
-        if (typeof callback === 'function') {
-            callback();
-        }
-    });
+    await Promise.all(tasks);
 };
 
 // Reload scene config and rebuild tiles
-Scene.prototype.reloadScene = function () {
+Scene.prototype.reloadScene = async function () {
     if (!this.initialized) {
         return;
     }
 
-    this.loadScene(() => {
-        this.createCamera();
-        this.createLighting();
-        this.refreshModes();
-        this.rebuildTiles();
-    });
+    await this.loadScene();
+
+    this.createCamera();
+    this.createLighting();
+    this.refreshModes();
+    this.rebuildTiles();
 };
 
 // Called (currently manually) after modes are updated in stylesheet
