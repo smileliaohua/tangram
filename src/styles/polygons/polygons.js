@@ -51,7 +51,13 @@ Object.assign(Polygons, {
     _parseFeature (feature, rule_style, context) {
         var style = this.feature_style;
 
-        style.color = rule_style.color && StyleParser.parseColor(rule_style.color, context);
+        if (rule_style.color != null) {
+            style.color = rule_style.color && StyleParser.parseColor(rule_style.color, context);
+        }
+        else {
+            style.color = StyleParser.defaults.color;
+        }
+
         style.width = rule_style.width && StyleParser.parseDistance(rule_style.width, context);
         style.z = (rule_style.z && StyleParser.parseDistance(rule_style.z || 0, context)) || StyleParser.defaults.z;
 
@@ -82,14 +88,20 @@ Object.assign(Polygons, {
 
         style.outline = style.outline || {};
         if (rule_style.outline) {
-            style.outline.color = StyleParser.parseColor(rule_style.outline.color, context);
+            if (rule_style.outline.color != null) {
+                style.outline.color = rule_style.outline.color && StyleParser.parseColor(rule_style.outline.color, context);
+            }
+            else {
+                style.outline.color = StyleParser.defaults.color;
+            }
+
             style.outline.width = StyleParser.parseDistance(rule_style.outline.width, context);
             style.outline.tile_edges = rule_style.outline.tile_edges;
             style.outline.cap = rule_style.outline.cap || rule_style.cap;
             style.outline.join = rule_style.outline.join || rule_style.join;
         }
         else {
-            style.outline.color = null;
+            style.outline.color = false;
             style.outline.width = null;
             style.outline.tile_edges = false;
         }
