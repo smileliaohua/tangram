@@ -303,6 +303,7 @@ layers:
         filter: { name: true, $zoom: { min: 17 } }
         style:
             name: text
+            offset: 24
             font:
                 typeface: 11px Lucida Grande
                 fill: dark red

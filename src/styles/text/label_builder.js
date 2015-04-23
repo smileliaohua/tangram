@@ -30,6 +30,19 @@ LabelBuilder.labelsFromGeometry = function (geometry, { text, size }, label_styl
 
             labels.push(label);
         } else {
+            console.log("label_style:", label_style.points);
+
+            // change offset with a style parameter
+            // currently only being set to 0
+            // let offset = (size.px_logical_size) * label_style.points.offset;
+
+            // change offset manually (this isn't fixed in screen space)
+            let offset = (size.px_logical_size) * -30;
+
+            console.log("offset:", offset);
+            geometry.coordinates[1] += offset;
+            // geometry.coordinates[1] -= 30;
+            console.log("gc4 new:", geometry.coordinates);
             labels.push(new LabelPoint(text, geometry.coordinates, size, null, false, true));
         }
     } else if (geometry.type === "MultiPoint") {

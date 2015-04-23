@@ -153,6 +153,9 @@ export var Style = {
                 style.selection_color = FeatureSelection.defaultColor;
             }
 
+            // type offset if it exists
+            style.offset = rule_style.offset;
+
             // Subclass implementation
             style = this._parseFeature(feature, rule_style, context);
 

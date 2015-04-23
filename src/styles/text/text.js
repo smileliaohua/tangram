@@ -64,7 +64,8 @@ Object.assign(TextStyle, {
             },
             points: {
                 max_width: 100,
-                line_height: 100 // percentage
+                line_height: 100, // percentage
+                offset: 0 // pixels
             }
         };
 
@@ -334,6 +335,10 @@ Object.assign(TextStyle, {
 
                 for (let f = 0; f < this.features[tile][style][text].length; f++) {
                     let feature = this.features[tile][style][text][f];
+
+                    // this passes the default offset
+                    console.log("this.label_style:", this.label_style);
+                    
                     let labels = LabelBuilder.labelsFromGeometry(
                             feature.geometry,
                             { text: text, size: text_info.size },
@@ -625,6 +630,7 @@ Object.assign(TextStyle, {
         // TODO: point style (parent class) requires a color, setting it to white for now,
         // but could be made conditional in the vertex layout to save space
         style.color = [1, 1, 1, 1];
+        if (style.offset) console.log("parsed text style:", style);
 
         return style;
     }
