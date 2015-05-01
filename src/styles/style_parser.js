@@ -147,7 +147,7 @@ StyleParser.getFeatureParseContext = function (feature, tile) {
     };
 };
 
-StyleParser.convertUnits = function(val, context, convert = true) {
+StyleParser.convertUnits = function(val, context, convert = 'meters') {
     if (typeof val === 'string') {
         var units = val.match(/([0-9.-]+)([a-z]+)/);
         if (units && units.length === 3) {
@@ -155,7 +155,8 @@ StyleParser.convertUnits = function(val, context, convert = true) {
             units = units[2];
         }
 
-        if (convert) {
+        // Convert to meters
+        if (convert === 'meters') {
             // Convert from pixels
             if (units === 'px') {
                 val *= Geo.metersPerPixel(context.zoom);
@@ -179,14 +180,16 @@ StyleParser.convertUnits = function(val, context, convert = true) {
     return val;
 };
 
-StyleParser.parseDistance = function(val, context, convert = true) {
+StyleParser.parseDistance = function(val, context, convert = 'units') {
     if (typeof val === 'function') {
         val = val(context);
     }
-    val = StyleParser.convertUnits(val, context, convert);
+    val = StyleParser.convertUnits(val, context,
+        (convert === 'units' || convert === 'meters') && 'meters'); // convert to meters
     val = Utils.interpolate(context.zoom, val);
 
-    if (convert) {
+    // Convert to tile units
+    if (convert === 'units') {
         if (typeof val === 'number') {
             val *= context.units_per_meter;
         }

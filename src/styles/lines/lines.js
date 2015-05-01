@@ -2,6 +2,7 @@
 
 import {Style} from '../style';
 import {StyleParser} from '../style_parser';
+import {StyleManager} from '../style_manager';
 import gl from '../../gl/constants'; // web workers don't have access to GL context, so import all GL constants
 import VertexLayout from '../../gl/vertex_layout';
 import Builders from '../builders';
@@ -51,7 +52,8 @@ Object.assign(Lines, {
         var style = this.feature_style;
 
         style.color = rule_style.color && StyleParser.parseColor(rule_style.color, context);
-        style.width = rule_style.width && StyleParser.parseDistance(rule_style.width, context);
+        let inner_width = rule_style.width && StyleParser.parseDistance(rule_style.width, context, 'meters');
+        style.width = inner_width * context.units_per_meter;
 
         // Smoothly interpolate line width between zooms: get scale factors to previous and next zooms
         // Adjust by factor of 2 because tile units are zoom-dependent (a given value is twice as
@@ -92,10 +94,13 @@ Object.assign(Lines, {
 
         style.outline = style.outline || {};
         if (rule_style.outline) {
-            style.outline.color = StyleParser.parseColor(rule_style.outline.color, context);
-            style.outline.width = StyleParser.parseDistance(rule_style.outline.width, context);
+            style.outline.color = rule_style.outline.color;
+            style.outline.width = StyleParser.parseDistance(rule_style.outline.width, context, 'meters');
+            style.outline.width = style.outline.width * 2 + inner_width;
             style.outline.cap = rule_style.outline.cap || rule_style.cap;
             style.outline.join = rule_style.outline.join || rule_style.join;
+            style.outline.style = rule_style.outline.style || this.name;
+            style.outline.order = style.order - 0.5;
         }
         else {
             style.outline.color = null;
@@ -190,6 +195,13 @@ Object.assign(Lines, {
         //         }
         //     );
         // }
+
+        if (style.outline && style.outline.color && style.outline.width) {
+            var outline_style = StyleManager.styles[style.outline.style];
+            if (outline_style) {
+                outline_style.addFeature(options.context.feature, style.outline, options.context.tile.key, options.context);
+            }
+        }
     },
 
     buildPolygons(polygons, style, vertex_data) {

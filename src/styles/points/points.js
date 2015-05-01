@@ -61,9 +61,9 @@ Object.assign(Points, {
             style.sprite = style.sprite(context);
         }
 
-        // point style only supports sizes in pixel units, so unit conversion flag is off
+        // point style only supports sizes in pixel units
         style.size = rule_style.size || [32, 32];
-        style.size = StyleParser.parseDistance(style.size, context, false);
+        style.size = StyleParser.parseDistance(style.size, context, 'pixels');
 
         // scale size to 16-bit signed int, with a max allowed width + height of 128 pixels
         style.size = [

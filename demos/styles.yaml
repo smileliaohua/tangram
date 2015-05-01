@@ -222,8 +222,12 @@ layers:
                         return order;
                     }
                 # interactive: true
+                outline:
+                    # style: flat_lines
+                    color: red
+                    width: 4px
             outlines:
-                style: flat_lines
+                # style: flat_lines
                 color: [[16, '#999'], [18, '#aaa']]
                 width: [[15, 0], [16, 14]]
                 order: |
